@@ -71,7 +71,7 @@ public class ProcessBlock {
         return priority;
     }
     public ListIterator<ProcessBlock> getChild(){
-        return child.listIterator(0);
+        return child.listIterator();
     }
     
     public void addResource(ResourceBlock newResource, int size){

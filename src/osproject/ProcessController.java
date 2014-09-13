@@ -67,9 +67,9 @@ public class ProcessController {
         }
         return null;
     }
-    private void killTree(ProcessBlock pointer){
+    private void killTree(ProcessBlock pointer){       
         ListIterator<ProcessBlock> child = pointer.getChild();
-        while(child.hasNext()){
+        while(child.hasNext()){          
             killTree(child.next());
         }
         if(pointer.getResourcesSize()>0){
@@ -84,17 +84,17 @@ public class ProcessController {
         if(temp!=null)
             temp.remove(pointer);
         pointer.delChild();
-        pointer.getParent().delChild(pointer);
     }
     private void updateResources(){
         for(int i=1;i<=4;i++){
             ResourceBlock temp = resources[i-1];
             boolean flag = true;
-            while(temp.getBlockedSize()>0 && flag){  
+            while(temp.getBlockedSize()>0 && flag && temp.getStatus()>0){  
                 ProcessNode nextProcessNode = temp.getList().peekFirst();
                 if(nextProcessNode.getRequestSize()<=temp.getStatus()){
                     ProcessBlock nextProcess = nextProcessNode.getProcess();
                     temp.getList().removeFirst();
+                    temp.setStatus(temp.getStatus()-nextProcessNode.getRequestSize());
                     nextProcess.setStatus("ready");
                     nextProcess.setList(readyList[nextProcess.getPriority()]);
                     nextProcess.addResource(temp, nextProcessNode.getRequestSize());
@@ -129,27 +129,31 @@ public class ProcessController {
         
         if(nameBlock<1 || nameBlock>4 || name.charAt(0)!='R' || size>nameBlock)
             throw new RuntimeException();
-        
+        boolean found = false;
         ResourceBlock temp = resources[nameBlock-1];
         ListIterator<ResourceNode> list = running.getResourcesList();
         while(list.hasNext()){
             ResourceNode rscNode = list.next();
             if(rscNode.getResource()==temp){
+                found = true;
                 
-                if(rscNode.getSize()<size)
+                if(rscNode.getSize()<size) //detect error if size to release is larger than what exists
                     throw new RuntimeException();
                 
                 rscNode.setSize(rscNode.getSize()-size);
-                if(rscNode.getSize()<=0) list.remove();
+                if(rscNode.getSize()==0) list.remove(); //if the size is 0
                 temp.setStatus(temp.getStatus()+size);
                 break;
             }
         }
-        if(temp.getBlockedSize()>0){
+        if(!found) throw new RuntimeException(); //detect if the resourceID exist in the process
+        
+        if(temp.getBlockedSize()>0){ //If there's another process waiting after the deletion
             ProcessNode nextProcessNode = temp.getList().peekFirst();
             if(nextProcessNode.getRequestSize()<=temp.getStatus()){
                 ProcessBlock nextProcess = nextProcessNode.getProcess();
                 temp.removeBlocked(nextProcess);
+                temp.setStatus(temp.getStatus()-nextProcessNode.getRequestSize());
                 nextProcess.setStatus("ready");
                 nextProcess.setList(readyList[nextProcess.getPriority()]);
                 nextProcess.addResource(temp, nextProcessNode.getRequestSize());
