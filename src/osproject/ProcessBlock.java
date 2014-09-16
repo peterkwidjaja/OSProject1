@@ -18,7 +18,8 @@ public class ProcessBlock {
     private final String PID;
     //resource
     private String status;
-    private LinkedList<ProcessBlock> list;
+    private LinkedList<ProcessBlock> waitingList;
+    private LinkedList<ProcessNode> blockedList;
     private ProcessBlock parent;
     private LinkedList<ProcessBlock> child;
     private int priority;
@@ -50,8 +51,13 @@ public class ProcessBlock {
     public void setPriority(int newPriority){
         this.priority = newPriority;
     }
-    public void setList(LinkedList list){
-        this.list = list;
+    public void setWaitingList(LinkedList<ProcessBlock> list){
+        this.waitingList = list;
+        this.blockedList = null;
+    }
+    public void setBlockedList(LinkedList<ProcessNode> list){
+        this.blockedList = list;
+        this.waitingList = null;
     }
     
     //Accessors
@@ -65,7 +71,13 @@ public class ProcessBlock {
         return status;
     }
     public LinkedList getList(){
-        return list;
+        if(this.status.equalsIgnoreCase("blocked")){
+            return blockedList;
+        }
+        else if(this.status.equalsIgnoreCase("ready")){
+            return waitingList;
+        }
+        return null;
     }
     public int getPriority(){
         return priority;

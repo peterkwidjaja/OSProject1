@@ -34,7 +34,7 @@ public class ProcessNode {
     public boolean equals(Object obj){
         if(obj instanceof ProcessBlock){
             ProcessBlock temp = (ProcessBlock) obj;
-            return temp == process;
+            return temp.equals(process);
         }
         return false;
     }

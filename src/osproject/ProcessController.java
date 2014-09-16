@@ -39,7 +39,7 @@ public class ProcessController {
             newProcess.setParent(running);
         }
         readyList[priority].add(newProcess);
-        newProcess.setList(readyList[priority]);
+        newProcess.setWaitingList(readyList[priority]);
         scheduler();
     }
     public void destroy(String PID){
@@ -96,7 +96,7 @@ public class ProcessController {
                     temp.getList().removeFirst();
                     temp.setStatus(temp.getStatus()-nextProcessNode.getRequestSize());
                     nextProcess.setStatus("ready");
-                    nextProcess.setList(readyList[nextProcess.getPriority()]);
+                    nextProcess.setWaitingList(readyList[nextProcess.getPriority()]);
                     nextProcess.addResource(temp, nextProcessNode.getRequestSize());
                     readyList[nextProcess.getPriority()].add(nextProcess);
                 }
@@ -110,6 +110,10 @@ public class ProcessController {
         int nameBlock = Integer.parseInt(name.substring(1));
         if(nameBlock<1 || nameBlock>4 || name.charAt(0)!='R' || size>nameBlock)
             throw new RuntimeException();
+        //check for resource redundancy
+        if(running.getResourcesSize()>0){
+
+        }
         ResourceBlock temp = resources[nameBlock-1];
         if(temp.isFree(size)){
             temp.setStatus(temp.getStatus()-size);
@@ -118,7 +122,7 @@ public class ProcessController {
         }
         else{
             running.setStatus("blocked");
-            running.setList(temp.getList());
+            running.setBlockedList(temp.getList());
             readyList[running.getPriority()].remove(running);
             temp.addBlocked(running,size);
         }
@@ -129,6 +133,7 @@ public class ProcessController {
         
         if(nameBlock<1 || nameBlock>4 || name.charAt(0)!='R' || size>nameBlock)
             throw new RuntimeException();
+        
         boolean found = false;
         ResourceBlock temp = resources[nameBlock-1];
         ListIterator<ResourceNode> list = running.getResourcesList();
@@ -152,10 +157,10 @@ public class ProcessController {
             ProcessNode nextProcessNode = temp.getList().peekFirst();
             if(nextProcessNode.getRequestSize()<=temp.getStatus()){
                 ProcessBlock nextProcess = nextProcessNode.getProcess();
-                temp.removeBlocked(nextProcess);
+                temp.removeFirstBlocked();
                 temp.setStatus(temp.getStatus()-nextProcessNode.getRequestSize());
                 nextProcess.setStatus("ready");
-                nextProcess.setList(readyList[nextProcess.getPriority()]);
+                nextProcess.setWaitingList(readyList[nextProcess.getPriority()]);
                 nextProcess.addResource(temp, nextProcessNode.getRequestSize());
                 readyList[nextProcess.getPriority()].add(nextProcess);
             }

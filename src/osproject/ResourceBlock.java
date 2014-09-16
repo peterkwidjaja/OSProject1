@@ -45,8 +45,8 @@ public class ResourceBlock {
         ProcessNode newNode = new ProcessNode(newProcess, size);
         blockedList.add(newNode);
     }
-    public void removeBlocked(ProcessBlock process){
-        if(blockedList.remove(process)) System.out.println("remove "+process.getID());
+    public void removeFirstBlocked(){
+        if(blockedList.removeFirst()!=null) System.out.println("remove success");
     }
     public int getBlockedSize(){
         return blockedList.size();
