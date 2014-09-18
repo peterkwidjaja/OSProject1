@@ -18,7 +18,7 @@ public class ProcessBlock {
     private final String PID;
     //resource
     private String status;
-    private LinkedList<ProcessBlock> waitingList;
+    private LinkedList<ProcessBlock> readyList;
     private LinkedList<ProcessNode> blockedList;
     private ProcessBlock parent;
     private LinkedList<ProcessBlock> child;
@@ -51,13 +51,13 @@ public class ProcessBlock {
     public void setPriority(int newPriority){
         this.priority = newPriority;
     }
-    public void setWaitingList(LinkedList<ProcessBlock> list){
-        this.waitingList = list;
+    public void setReadyList(LinkedList<ProcessBlock> list){
+        this.readyList = list;
         this.blockedList = null;
     }
     public void setBlockedList(LinkedList<ProcessNode> list){
         this.blockedList = list;
-        this.waitingList = null;
+        this.readyList = null;
     }
     
     //Accessors
@@ -71,11 +71,11 @@ public class ProcessBlock {
         return status;
     }
     public LinkedList getList(){
-        if(this.status.equalsIgnoreCase("blocked")){
+        if(status.equalsIgnoreCase("blocked")){
             return blockedList;
         }
-        else if(this.status.equalsIgnoreCase("ready")){
-            return waitingList;
+        else if(status.equalsIgnoreCase("ready") || status.equalsIgnoreCase("running")){
+            return readyList;
         }
         return null;
     }
@@ -87,6 +87,14 @@ public class ProcessBlock {
     }
     
     public void addResource(ResourceBlock newResource, int size){
+        ListIterator<ResourceNode> tempList = getResourcesList();
+        while(tempList.hasNext()){
+            ResourceNode tempNode = tempList.next();
+            if(tempNode.getResource()==newResource){
+                tempNode.setSize(tempNode.getSize()+ size);
+                return;
+            }
+        }
         ResourceNode newNode = new ResourceNode(newResource, size);
         otherResources.add(newNode);
     }

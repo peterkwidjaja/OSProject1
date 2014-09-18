@@ -6,6 +6,7 @@
 
 package osproject;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.ListIterator;
 
@@ -15,8 +16,10 @@ import java.util.ListIterator;
  */
 public class ProcessController {
     LinkedList<ProcessBlock>[] readyList = new LinkedList[3];
+    ProcessBlock init;
     ProcessBlock running;
     ResourceBlock[] resources;
+    //HashMap<String, ProcessBlock> hashProcess = new HashMap<String, ProcessBlock>();
     
     public ProcessController(){
         resources = new ResourceBlock[4];
@@ -24,25 +27,30 @@ public class ProcessController {
             resources[i-1] = new ResourceBlock("R"+i,i);
         }
         for(int i=0;i<3;i++){
-            readyList[i] = new LinkedList<>();
+            readyList[i] = new LinkedList<ProcessBlock>();
         }
         running = null;
         create("init",0);
-        //System.out.println("init");
     }
     public void create(String PID, int priority){
-        if(priority<0 || priority>2)
+        if(priority<0 || priority>2 )
             throw new RuntimeException();
         ProcessBlock newProcess = new ProcessBlock(PID,"ready",priority);
         if(!PID.equals("init")){
             running.addChild(newProcess);
             newProcess.setParent(running);
         }
+        else{
+            init = newProcess;
+        }
         readyList[priority].add(newProcess);
-        newProcess.setWaitingList(readyList[priority]);
+        newProcess.setReadyList(readyList[priority]);
+        //hashProcess.put(PID, newProcess);
         scheduler();
     }
     public void destroy(String PID){
+        if(PID.equalsIgnoreCase("init"))
+            throw new RuntimeException();
         ProcessBlock temp = findBlock(PID, running);
         if(temp==null){
             throw new RuntimeException();
@@ -72,17 +80,23 @@ public class ProcessController {
         while(child.hasNext()){          
             killTree(child.next());
         }
+        
+        //release all resources held by the process
         if(pointer.getResourcesSize()>0){
             ListIterator<ResourceNode> rsc = pointer.getResourcesList();
             while(rsc.hasNext()){
                 ResourceNode tempNode = rsc.next();
                 ResourceBlock tempBlock = tempNode.getResource();
-                tempBlock.setStatus(tempBlock.getStatus()+tempNode.getSize());
+                tempBlock.setStatus(tempBlock.getStatus()+tempNode.getSize()); //add the number of empty unit(s) in the resource
             }
         }
-        LinkedList<ProcessBlock> temp = pointer.getList();
-        if(temp!=null)
+        
+        //Update pointers
+        LinkedList temp = pointer.getList();
+        if(temp!=null){
             temp.remove(pointer);
+        }
+        //hashProcess.remove(pointer.getID());
         pointer.delChild();
     }
     private void updateResources(){
@@ -96,7 +110,7 @@ public class ProcessController {
                     temp.getList().removeFirst();
                     temp.setStatus(temp.getStatus()-nextProcessNode.getRequestSize());
                     nextProcess.setStatus("ready");
-                    nextProcess.setWaitingList(readyList[nextProcess.getPriority()]);
+                    nextProcess.setReadyList(readyList[nextProcess.getPriority()]);
                     nextProcess.addResource(temp, nextProcessNode.getRequestSize());
                     readyList[nextProcess.getPriority()].add(nextProcess);
                 }
@@ -110,15 +124,24 @@ public class ProcessController {
         int nameBlock = Integer.parseInt(name.substring(1));
         if(nameBlock<1 || nameBlock>4 || name.charAt(0)!='R' || size>nameBlock)
             throw new RuntimeException();
+        
         //check for resource redundancy
+        //Return error if trying to request same resource but over the size limit
         if(running.getResourcesSize()>0){
-
+            ListIterator<ResourceNode> rscIterator = running.getResourcesList();
+            while(rscIterator.hasNext()){
+                ResourceNode tempNode = rscIterator.next();
+                if(tempNode.getID().equalsIgnoreCase(name)){
+                    if(tempNode.getSize()+size > nameBlock)
+                        throw new RuntimeException();
+                }
+            }
         }
+        
         ResourceBlock temp = resources[nameBlock-1];
         if(temp.isFree(size)){
             temp.setStatus(temp.getStatus()-size);
             running.addResource(temp,size);
-            System.out.println("FREE");
         }
         else{
             running.setStatus("blocked");
@@ -160,7 +183,7 @@ public class ProcessController {
                 temp.removeFirstBlocked();
                 temp.setStatus(temp.getStatus()-nextProcessNode.getRequestSize());
                 nextProcess.setStatus("ready");
-                nextProcess.setWaitingList(readyList[nextProcess.getPriority()]);
+                nextProcess.setReadyList(readyList[nextProcess.getPriority()]);
                 nextProcess.addResource(temp, nextProcessNode.getRequestSize());
                 readyList[nextProcess.getPriority()].add(nextProcess);
             }
