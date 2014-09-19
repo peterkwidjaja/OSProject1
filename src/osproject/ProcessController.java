@@ -185,7 +185,9 @@ public class ProcessController {
         }
         if(!found) throw new RuntimeException(); //detect if the resourceID does not exist in the process
         
-        if(temp.getBlockedSize()>0){ //If there's another process waiting after the deletion
+        boolean flag = true;
+        //Check if the process waiting after the deletion can be allocated the resource
+        while(temp.getBlockedSize()>0 && flag){ 
             ProcessNode nextProcessNode = temp.getList().peekFirst();
             if(nextProcessNode.getRequestSize()<=temp.getStatus()){
                 ProcessBlock nextProcess = nextProcessNode.getProcess();
@@ -195,6 +197,9 @@ public class ProcessController {
                 nextProcess.setReadyList(readyList[nextProcess.getPriority()]);
                 nextProcess.addResource(temp, nextProcessNode.getRequestSize());
                 readyList[nextProcess.getPriority()].add(nextProcess);
+            }
+            else{
+                flag = false;
             }
         }
         scheduler();
