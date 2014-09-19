@@ -19,7 +19,7 @@ public class ProcessController {
     ProcessBlock init;
     ProcessBlock running;
     ResourceBlock[] resources;
-    HashMap<String, ProcessBlock> hashProcess = new HashMap<String, ProcessBlock>();
+    HashMap<String, ProcessBlock> hashProcess = new HashMap<>();
     
     public ProcessController(){
         resources = new ResourceBlock[4];
@@ -27,7 +27,7 @@ public class ProcessController {
             resources[i-1] = new ResourceBlock("R"+i,i);
         }
         for(int i=0;i<3;i++){
-            readyList[i] = new LinkedList<ProcessBlock>();
+            readyList[i] = new LinkedList<>();
         }
         running = null;
         create("init",0);
