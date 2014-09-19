@@ -46,7 +46,7 @@ public class ResourceBlock {
         blockedList.add(newNode);
     }
     public void removeFirstBlocked(){
-        if(blockedList.removeFirst()!=null) System.out.println("remove success");
+        blockedList.removeFirst();
     }
     public int getBlockedSize(){
         return blockedList.size();
