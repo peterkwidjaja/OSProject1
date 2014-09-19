@@ -19,7 +19,7 @@ public class ProcessController {
     ProcessBlock init;
     ProcessBlock running;
     ResourceBlock[] resources;
-    //HashMap<String, ProcessBlock> hashProcess = new HashMap<String, ProcessBlock>();
+    HashMap<String, ProcessBlock> hashProcess = new HashMap<String, ProcessBlock>();
     
     public ProcessController(){
         resources = new ResourceBlock[4];
@@ -33,7 +33,7 @@ public class ProcessController {
         create("init",0);
     }
     public void create(String PID, int priority){
-        if(priority<0 || priority>2 )
+        if((priority==0&&!PID.equals("init")) || priority<0 || priority>2 || hashProcess.containsKey(PID))
             throw new RuntimeException();
         ProcessBlock newProcess = new ProcessBlock(PID,"ready",priority);
         if(!PID.equals("init")){
@@ -45,14 +45,14 @@ public class ProcessController {
         }
         readyList[priority].add(newProcess);
         newProcess.setReadyList(readyList[priority]);
-        //hashProcess.put(PID, newProcess);
+        hashProcess.put(PID, newProcess);
         scheduler();
     }
     public void destroy(String PID){
         if(PID.equalsIgnoreCase("init"))
             throw new RuntimeException();
         ProcessBlock temp = findBlock(PID, running);
-        if(temp==null){
+        if(temp==null){ //throw error if process is not found under the child of the current running process
             throw new RuntimeException();
         }
         killTree(temp);
@@ -96,7 +96,7 @@ public class ProcessController {
         if(temp!=null){
             temp.remove(pointer);
         }
-        //hashProcess.remove(pointer.getID());
+        hashProcess.remove(pointer.getID());
         pointer.delChild();
     }
     private void updateResources(){
@@ -121,7 +121,11 @@ public class ProcessController {
     }
     
     public void request(String name, int size){
+        if(running.getID().equals("init"))
+            throw new RuntimeException();
+        
         int nameBlock = Integer.parseInt(name.substring(1));
+        
         if(nameBlock<1 || nameBlock>4 || name.charAt(0)!='R' || size>nameBlock)
             throw new RuntimeException();
         
@@ -151,7 +155,11 @@ public class ProcessController {
         }
         scheduler();
     }
+    
     public void release(String name, int size){
+        if(running.getID().equals("init"))
+            throw new RuntimeException();
+        
         int nameBlock = Integer.parseInt(name.substring(1));
         
         if(nameBlock<1 || nameBlock>4 || name.charAt(0)!='R' || size>nameBlock)
@@ -160,12 +168,13 @@ public class ProcessController {
         boolean found = false;
         ResourceBlock temp = resources[nameBlock-1];
         ListIterator<ResourceNode> list = running.getResourcesList();
+        //Find the resource in the process
         while(list.hasNext()){
             ResourceNode rscNode = list.next();
             if(rscNode.getResource()==temp){
                 found = true;
                 
-                if(rscNode.getSize()<size) //detect error if size to release is larger than what exists
+                if(rscNode.getSize()<size) //throw error if size to release is larger than what exists
                     throw new RuntimeException();
                 
                 rscNode.setSize(rscNode.getSize()-size);
@@ -174,7 +183,7 @@ public class ProcessController {
                 break;
             }
         }
-        if(!found) throw new RuntimeException(); //detect if the resourceID exist in the process
+        if(!found) throw new RuntimeException(); //detect if the resourceID does not exist in the process
         
         if(temp.getBlockedSize()>0){ //If there's another process waiting after the deletion
             ProcessNode nextProcessNode = temp.getList().peekFirst();
@@ -191,6 +200,9 @@ public class ProcessController {
         scheduler();
     }
     public void timeout(){
+        if(running.getID().equals("init"))
+            throw new RuntimeException();
+        
         readyList[running.getPriority()].remove(running);
         running.setStatus("ready");
         readyList[running.getPriority()].add(running);
